@@ -226,3 +226,57 @@ WHERE
 	OR sls_price IS NULL OR sls_price <= 0 OR sls_sales != sls_price * sls_quantity
 ORDER BY sls_sales
 			
+
+
+================================
+	Test-1 
+	erp_cust_az12
+================================
+
+-- Check if the Birth_dt is obselete (future date of birth)
+-- Replaced it with NULL
+SELECT 
+	bdate
+FROM Silver.erp_cust_az12
+WHERE
+	 bdate > GETDATE() 
+
+
+-- In ERP the customer_ID is cleaned (NAS removed)
+-- Matched with customer_key from CRM Customer_info
+SELECT * 
+FROM Silver.erp_cust_az12
+WHERE 
+	cid  
+	NOT IN (SELECT cst_key FROM Silver.crm_cust_info) 
+
+-- Checked the distince values with Customer_gender
+-- Than cleaned the date with customer_gender either male or female or n/a.
+SELECT distinct gen
+	FROM Silver.erp_cust_az12
+
+	
+======================
+	Test-1
+	erp_loc_a101
+======================
+-- Checked the cid of erp_location table with cst of crm_customer_info table
+-- Removed the hyphen(-) 
+SELECT 
+	cid,
+FROM Bronze.erp_loc_a101
+WHERE cid NOT IN (SELECT cst_key from Silver.crm_cust_info)
+
+-- Normalisation and Data Consistency
+-- Handling the unknown values
+SELECT 
+	DISTINCT CASE 
+		WHEN TRIM(ctry) IN ('US','USA') THEN 'United States'
+		WHEN TRIM(ctry) = 'DE' THEN 'Germany'
+		WHEN TRIM(ctry) = ''OR TRIM(ctry) IS NULL THEN 'n/a'
+		ELSE TRIM(ctry)
+		END AS ctry_new
+FROM Bronze.erp_loc_a101
+
+
+

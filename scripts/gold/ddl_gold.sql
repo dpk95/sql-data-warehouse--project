@@ -2,6 +2,10 @@
 -- CRM is the master data while selecting the customer info.
 -- For gender selection crm_cust_info is preferred.
 
+==================================
+	Create the view 
+	gold.dim_customer
+==================================
 CREATE schema gold;
 DROP view gold.dim_customer
 CREATE VIEW gold.dim_customer
@@ -28,4 +32,68 @@ LEFT JOIN
 LEFT JOIN
 	Silver.erp_loc_a101 AS li
 	ON ci.cst_key = li.cid
-     
+
+
+==================================
+	Create the view 
+	gold.dim_product
+==================================
+DROP VIEW gold.dim_product
+CREATE VIEW gold.dim_product 
+AS
+SELECT 
+		ROW_NUMBER() OVER(ORDER BY prd.prd_start_dt,prd.prd_key) product_key,
+		prd.prd_id AS product_id,
+		prd.prd_key AS product_num,
+		prd.prd_nm AS product_name,
+		prd.cat_id AS category_id,
+		ca.cat AS category,
+		ca.subcat AS sub_category,
+		ca.maintenance,
+		prd.prd_cost AS   cost,
+		prd.prd_line as product_line,
+		prd.prd_start_dt AS start_date
+	FROM 
+		Silver.crm_prd_info prd
+	LEFT JOIN 
+		Silver.erp_px_cat_giv2 ca
+		ON prd.cat_id = ca.id
+	WHERE 
+		prd_end_dt IS NULL --Filter out the historical data
+
+
+==================================
+	Create the view 
+	gold.fact_sales
+==================================
+CREATE VIEW gold.fact_sales AS
+SELECT 
+	sa.sls_ord_num AS order_number,
+	po.product_key,
+	cu.customer_key,
+	sa.sls_order_dt AS order_date,
+	sa.sls_ship_dt AS ship_date,
+	sa.sls_due_dt AS due_date,
+	sa.sls_sales as sales_amount,
+	sa.sls_quantity AS sales_quantity,
+	sa.sls_price AS price
+FROM Silver.crm_sales_info sa
+LEFT JOIN gold.dim_product po
+	ON sa.sls_prd_key = po.product_num
+LEFT JOIN gold.dim_customer cu
+	ON sa.sls_cust_id = cu.customer_id
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,6 +1,6 @@
 ===================
 	TEST-1
-	cust_info
+	crm_cust_info
 ===================
 --Check for Nulls or Duplicates in Bronze.crm_cst_id.
 --Expectation: No Results.
@@ -62,7 +62,7 @@ FROM Bronze.crm_cust_info;
 
 ======================
 	TEST-2
-	cust_info
+	crm_cust_info
 ======================
 --Data Standardisation and Consistency
 --Change cst_gndr = M,F as Male & Female.
@@ -92,7 +92,7 @@ FROM Bronze.crm_cust_info;
 
 ======================================
 	Test -1
-	prd_info
+	crm_prd_info
 ======================================
 
 -- Checking the prd_id with duplicates
@@ -119,7 +119,7 @@ WHERE
 
 =================================
 	Test-2
-	prd_info
+	crm_prd_info
 =================================
 -- Checking the prd_cost column with Negative and Null values
 -- Removing the NULL values with default values
@@ -158,4 +158,71 @@ SELECT
 	OVER(
 		PARTITION BY prd_key ORDER BY prd_start_dt)) 
 			AS prd_end_dt
+
+==========================
+	Test -1
+	crm_sales_info
+==========================
+
+--This shows that the prd_key is unique for same order_number and customer_id.
+--Here for the same customer_id the order_number is same as there can be multiple products ordered by him.
+--Therefor the order_number can be same.
+
+SELECT 
+	sls_ord_num,
+	COUNT(*)
+FROM 
+	Bronze.crm_sales_info
+GROUP BY 
+	sls_ord_num
+HAVING 
+	COUNT(*)>1
+
+-- Data Cleaning 
+-- Clecking for spaces
+WHERE 
+	sls_ord_num != TRIM(sls_ord_num)
+
+-- To Check data consistency
+-- Check all the values availabe in sales_product_key.
+WHERE 
+	sls_prd_key NOT IN (Select prd_key FROM Silver.crm_prd_info)
+
+WHERE 
+	sls_cust_id NOT IN (Select cst_id FROM Silver.crm_cust_info)
+
+--Checking the Order date Due date and Shipping date.
+-- If order date is 0 OR the length of the order date is not 8 than the date is wrong so convert it to NULL
+-- Also check if Order_date is smaller than Shipping_dt, which is smaller than Due_dt.
+
+Where 
+	sls_order_dt = 0 OR
+	LEN(sls_order_dt) != 8 
+
+WHERE
+	sls_order_dt > sls_ship_dt > sls_due_dt
+
+-- Check if Price, Quantity and Sales are zero or negative.
+-- Check if Sales = Price* Quantity
+SELECT 
+	sls_sales,
+	sls_quantity,
+	sls_price
+	/*CASE 
+	WHEN sls_sales <= 0 OR sls_sales IS NULL OR sls_sales != ABS(sls_price) * sls_quantity
+		THEN ABS(sls_price) * sls_quantity
+	ELSE sls_sales
+	END AS sls_sales,
+	sls_quantity,
+	sls_price AS sls_price_old,
+	CASE 
+		WHEN sls_price <= 0 OR sls_price IS NULL
+			THEN sls_sales/sls_quantity
+		ELSE sls_price
+		END as sls_price*/
+FROM Silver.crm_sales_info
+WHERE 
+	sls_sales IS NULL OR sls_sales<= 0 OR sls_quantity IS NULL OR sls_quantity <= 0
+	OR sls_price IS NULL OR sls_price <= 0 OR sls_sales != sls_price * sls_quantity
+ORDER BY sls_sales
 			

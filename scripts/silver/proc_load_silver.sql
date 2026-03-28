@@ -1,4 +1,10 @@
-
+/*
+	--Insert the data inside the tables.
+	--Truncate the table so that it can always take the updated values.
+	--Covered it into stored procedure with CREATE OR ALTER PROCEDURE
+	--To know if there is an error we have created a CATCH.
+	--Used variables so that can get the time for loading.
+*/
 
 
 CREATE OR ALTER Procedure Silver.load_silver

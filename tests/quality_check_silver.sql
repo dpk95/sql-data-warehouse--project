@@ -90,4 +90,72 @@ SELECT
 	cst_create_date
 FROM Bronze.crm_cust_info; 
 
+======================================
+	Test -1
+	prd_info
+======================================
+
+-- Checking the prd_id with duplicates
+-- Expectations: NO Results
+SELECT prd_id, COUNT(*)
+FROM Silver.crm_prd_info
+GROUP BY prd_id
+HAVING COUNT(*)>1
+
+-- Seperate the main string prd_key to cat_key and than check it with other table's data.
+-- To check if all the data in SUBSTRING(prd_key,7,LEN(prd_key) is available in (SELECT sls_prd_key FROM Bronze.crm_sales_info)
+-- 'WHERE SUBSTRING(prd_key,7,LEN(prd_key)) IN (SELECT sls_prd_key FROM Bronze.crm_sales_info)'
+
+
+-- Check for Unwanted Spaces in prd_nm
+-- Expectation: No Result
+
+SELECT 
+	prd_nm 
+FROM 
+	Silver.crm_prd_info
+WHERE 
+	prd_nm != TRIM(prd_nm)
+
+=================================
+	Test-2
+	prd_info
+=================================
+-- Checking the prd_cost column with Negative and Null values
+-- Removing the NULL values with default values
+SELECT 
+	prd_cost
+FROM 
+	Silver.crm_prd_info
+WHERE 
+	prd_cost < 0 OR prd_cost IS NULL
+
+-- Data Standardisation & Consistency
+SELECT DISTINCT 
+	prd_line
+FROM 
+	Silver.crm_prd_info
+
+-- Check for valid date orders
+-- And than arrange them in order 
+SELECT 
+	*
+FROM 
+	Silver.crm_prd_info
+WHERE
+	prd_end_dt < prd_start_dt
+
+-- Arrange the start_dt in partition of prd_key
+-- Than arrange the end_dt 
+-- By using the Leading start_dt as the base
+-- ADDDATE to substract the end_dt so that no overlapping can be done.
+SELECT
+	prd_start_dt,
+	ADDDATE(
+		DAY,
+		-1,
+		LEAD(prd_start_dt) 
+	OVER(
+		PARTITION BY prd_key ORDER BY prd_start_dt)) 
+			AS prd_end_dt
 			
